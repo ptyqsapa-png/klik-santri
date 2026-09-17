@@ -1,219 +1,462 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="h-full bg-slate-50">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Klinik & Poskestren Santri</title>
-  <!-- Tailwind CSS CDN -->
+  <title>Poskestren - Sistem Rekam Medis Klinik Santri</title>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <!-- Supabase JS Client SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
+  <!-- Chart.js for Visual Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- Header / Navigation -->
-  <header class="bg-emerald-700 text-white shadow-lg sticky top-0 z-30">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
-      <div class="flex items-center space-x-3">
-        <div class="p-2 bg-emerald-800 rounded-lg">
-          <i data-lucide="stethosocpe" class="w-6 h-6 text-emerald-200"></i>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      body { background: white !important; color: black !important; }
+    }
+    .print-only { display: none; }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="h-full text-slate-800 antialiased flex flex-col font-sans">
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="bg-gradient-to-r from-brand-900 via-brand-800 to-slate-900 text-white shadow-md sticky top-0 z-30 no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo & Title -->
+        <div class="flex items-center space-x-3">
+          <div class="p-2.5 bg-emerald-500/20 backdrop-blur border border-emerald-400/30 rounded-xl shadow-inner">
+            <i data-lucide="activity" class="w-6 h-6 text-emerald-300"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-lg font-bold tracking-tight text-white">Poskestren Medical</h1>
+              <span class="bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 text-[10px] font-semibold px-2 py-0.5 rounded-full">v2.0</span>
+            </div>
+            <p class="text-xs text-emerald-200/80">Sistem Informasi Health Center & Rekam Medis Santri</p>
+          </div>
         </div>
-        <div>
-          <h1 class="text-xl font-bold leading-tight">Poskestren & Klinik Santri</h1>
-          <p class="text-xs text-emerald-200">Sistem Pencatatan & Rekapitulasi Kesehatan Santri</p>
+
+        <!-- Header Actions -->
+        <div class="flex items-center space-x-3">
+          <button onclick="openModal('modalConfig')" class="text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg transition border border-slate-700 flex items-center gap-2">
+            <i data-lucide="database" class="w-4 h-4 text-emerald-400"></i>
+            <span class="hidden sm:inline">Koneksi Supabase</span>
+          </button>
         </div>
-      </div>
-      <div class="flex items-center gap-2">
-        <button onclick="toggleModal('modalConfig')" class="text-xs bg-emerald-800 hover:bg-emerald-900 px-3 py-2 rounded-lg transition flex items-center gap-1.5 border border-emerald-600">
-          <i data-lucide="settings" class="w-4 h-4"></i>
-          <span>Pengaturan Supabase</span>
-        </button>
       </div>
     </div>
   </header>
 
-  <!-- Main Content -->
-  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 no-print">
 
-    <!-- Key Metrics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
-        <div>
-          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Kunjungan</p>
-          <h3 id="statTotal" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
-        </div>
-        <div class="p-3 bg-blue-50 text-blue-600 rounded-lg">
-          <i data-lucide="users" class="w-6 h-6"></i>
+    <!-- Sub-Header & Navigation Tabs -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
+      <nav class="flex space-x-1 bg-slate-100/80 p-1 rounded-xl" aria-label="Tabs">
+        <button onclick="switchTab('tab-rekam')" id="btn-tab-rekam" class="tab-btn active px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 bg-white text-slate-900 shadow-sm">
+          <i data-lucide="clipboard-list" class="w-4 h-4 text-brand-600"></i>
+          <span>Pemeriksaan & Rekap</span>
+        </button>
+        <button onclick="switchTab('tab-analytics')" id="btn-tab-analytics" class="tab-btn px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900">
+          <i data-lucide="bar-chart-3" class="w-4 h-4 text-brand-600"></i>
+          <span>Analisis & Grafik</span>
+        </button>
+      </nav>
+
+      <div class="flex items-center gap-2 self-end sm:self-auto">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          Database Aktif
+        </span>
+      </div>
+    </div>
+
+    <!-- Key Metrics Dashboard Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Kunjungan</p>
+            <h3 id="statTotal" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+            <p class="text-[11px] text-slate-500 mt-0.5">Semua rekaman medis</p>
+          </div>
+          <div class="p-3 bg-blue-50 text-blue-600 rounded-xl border border-blue-100">
+            <i data-lucide="users" class="w-6 h-6"></i>
+          </div>
         </div>
       </div>
 
-      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
-        <div>
-          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Kembali ke Kamar</p>
-          <h3 id="statKamar" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
-        </div>
-        <div class="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-          <i data-lucide="home" class="w-6 h-6"></i>
-        </div>
-      </div>
-
-      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
-        <div>
-          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Rawat Poskestren</p>
-          <h3 id="statPoskestren" class="text-2xl font-bold text-amber-600 mt-1">0</h3>
-        </div>
-        <div class="p-3 bg-amber-50 text-amber-600 rounded-lg">
-          <i data-lucide="bed" class="w-6 h-6"></i>
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Kembali Ke Kamar</p>
+            <h3 id="statKamar" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
+            <p class="text-[11px] text-slate-500 mt-0.5">Berobat jalan / rawat ringan</p>
+          </div>
+          <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
+            <i data-lucide="home" class="w-6 h-6"></i>
+          </div>
         </div>
       </div>
 
-      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
-        <div>
-          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Rujuk Rumah Sakit</p>
-          <h3 id="statRujuk" class="text-2xl font-bold text-rose-600 mt-1">0</h3>
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Rawat Poskestren</p>
+            <h3 id="statPoskestren" class="text-2xl font-bold text-amber-600 mt-1">0</h3>
+            <p class="text-[11px] text-slate-500 mt-0.5">Istirahat di ruang UKS</p>
+          </div>
+          <div class="p-3 bg-amber-50 text-amber-600 rounded-xl border border-amber-100">
+            <i data-lucide="bed" class="w-6 h-6"></i>
+          </div>
         </div>
-        <div class="p-3 bg-rose-50 text-rose-600 rounded-lg">
-          <i data-lucide="ambulance" class="w-6 h-6"></i>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Rujuk Rumah Sakit</p>
+            <h3 id="statRujuk" class="text-2xl font-bold text-rose-600 mt-1">0</h3>
+            <p class="text-[11px] text-slate-500 mt-0.5">Penanganan tingkat lanjut</p>
+          </div>
+          <div class="p-3 bg-rose-50 text-rose-600 rounded-xl border border-rose-100">
+            <i data-lucide="ambulance" class="w-6 h-6"></i>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Form Input Pemeriksaan -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
-        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <i data-lucide="clipboard-plus" class="w-5 h-5 text-emerald-600"></i>
-          <span>Input Data Pemeriksaan Santri</span>
-        </h2>
+    <!-- TAB 1: FORM & REKAP DATA -->
+    <div id="tab-rekam" class="space-y-6 tab-content">
+      
+      <!-- Form Input Pemeriksaan -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <div class="p-1.5 bg-brand-100 text-brand-700 rounded-lg">
+              <i data-lucide="plus-circle" class="w-5 h-5"></i>
+            </div>
+            <h2 class="text-base font-bold text-slate-800">Input Data Pemeriksaan Santri</h2>
+          </div>
+          <span class="text-xs text-slate-400 font-normal">* Wajib diisi</span>
+        </div>
+
+        <form id="formPeriksa" class="p-6 grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">NIS Santri *</label>
+            <div class="relative">
+              <i data-lucide="id-card" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+              <input type="text" id="nis" required placeholder="2024001" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:bg-white transition outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Nama Lengkap Santri *</label>
+            <div class="relative">
+              <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+              <input type="text" id="nama" required placeholder="Ahmad Zaki Fuadi" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:bg-white transition outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Kelas / Asrama *</label>
+            <div class="relative">
+              <i data-lucide="building-2" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+              <input type="text" id="kelas" required placeholder="10-A / Asrama Umar bin Khattab" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:bg-white transition outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal Periksa *</label>
+            <div class="relative">
+              <i data-lucide="calendar" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+              <input type="date" id="tanggal" required class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:bg-white transition outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Petugas / Nakes *</label>
+            <div class="relative">
+              <i data-lucide="user-check" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+              <input type="text" id="petugas" required placeholder="Ust. Farhan / Dr. Rahman" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:bg-white transition outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Tindak Lanjut / Status *</label>
+            <div class="relative">
+              <i data-lucide="check-circle-2" class="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none"></i>
+              <select id="status" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:bg-white transition outline-none appearance-none">
+                <option value="Kembali ke Kamar">Kembali ke Kamar</option>
+                <option value="Istirahat di Poskestren">Istirahat di Poskestren</option>
+                <option value="Rujuk Rumah Sakit">Rujuk Rumah Sakit</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="md:col-span-3">
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Keluhan Utama *</label>
+            <textarea id="keluhan" required rows="2" placeholder="Gejala atau keluhan yang dirasakan santri (misal: Demam 38°C, Pusing, Batuk Kering)..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:bg-white transition outline-none"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Diagnosa Medis</label>
+            <input type="text" id="diagnosa" placeholder="Contoh: Febris, Dyspepsia, ISPA" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:bg-white transition outline-none">
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Terapi / Obat Diberikan</label>
+            <input type="text" id="terapi_obat" placeholder="Contoh: Paracetamol 3x500mg, Antasida 3x1 tablet" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:bg-white transition outline-none">
+          </div>
+
+          <div class="md:col-span-3 pt-2">
+            <button type="submit" id="btnSubmit" class="w-full bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+              <i data-lucide="save" class="w-5 h-5"></i>
+              <span>Simpan Record Pemeriksaan</span>
+            </button>
+          </div>
+        </form>
       </div>
 
-      <form id="formPeriksa" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">NIS Santri *</label>
-          <input type="text" id="nis" required placeholder="Contoh: 2024001" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+      <!-- Tabel Rekap Data -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden space-y-4 p-6">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+              <i data-lucide="database" class="w-5 h-5 text-brand-600"></i>
+              <span>Riwayat & Rekapitulasi Medis Santri</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Filter, cari data, atau cetak surat izin berobat santri</p>
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+            <select id="filterStatus" onchange="filterData()" class="border border-slate-200 bg-slate-50 text-slate-700 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="ALL">Semua Status</option>
+              <option value="Kembali ke Kamar">Kembali ke Kamar</option>
+              <option value="Istirahat di Poskestren">Istirahat di Poskestren</option>
+              <option value="Rujuk Rumah Sakit">Rujuk Rumah Sakit</option>
+            </select>
+
+            <div class="relative flex-1 sm:w-64">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+              <input type="text" id="searchBar" onkeyup="filterData()" placeholder="Cari NIS, Nama, Keluhan..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-brand-500">
+            </div>
+
+            <button onclick="exportCSV()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-medium border border-slate-200 transition flex items-center gap-1.5">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>Export CSV</span>
+            </button>
+          </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nama Lengkap Santri *</label>
-          <input type="text" id="nama" required placeholder="Nama Santri" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+        <div class="overflow-x-auto rounded-xl border border-slate-100">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50/80 text-slate-500 uppercase text-[11px] font-bold tracking-wider border-b border-slate-200">
+                <th class="p-3.5">Tanggal</th>
+                <th class="p-3.5">Identitas Santri</th>
+                <th class="p-3.5">Keluhan</th>
+                <th class="p-3.5">Diagnosa</th>
+                <th class="p-3.5">Terapi / Obat</th>
+                <th class="p-3.5">Status</th>
+                <th class="p-3.5">Petugas</th>
+                <th class="p-3.5 text-center">Aksi / Cetak</th>
+              </tr>
+            </thead>
+            <tbody id="tabelBody" class="divide-y divide-slate-100 text-xs">
+              <!-- Rendered Dynamically -->
+            </tbody>
+          </table>
         </div>
+      </div>
 
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Kelas / Asrama *</label>
-          <input type="text" id="kelas" required placeholder="Contoh: 10-A / Asrama Umar" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tanggal Periksa *</label>
-          <input type="date" id="tanggal" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Petugas / Nakes *</label>
-          <input type="text" id="petugas" required placeholder="Nama Petugas Klinik" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tindak Lanjut / Status *</label>
-          <select id="status" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
-            <option value="Kembali ke Kamar">Kembali ke Kamar</option>
-            <option value="Istirahat di Poskestren">Istirahat di Poskestren</option>
-            <option value="Rujuk Rumah Sakit">Rujuk Rumah Sakit</option>
-          </select>
-        </div>
-
-        <div class="md:col-span-3">
-          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Keluhan Utama *</label>
-          <textarea id="keluhan" required rows="2" placeholder="Gejala atau keluhan yang dirasakan santri..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Diagnosa</label>
-          <input type="text" id="diagnosa" placeholder="Contoh: Febris, Dyspepsia" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
-        </div>
-
-        <div class="md:col-span-2">
-          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Terapi / Obat Diberikan</label>
-          <input type="text" id="terapi_obat" placeholder="Contoh: Paracetamol 3x1, Antasida 3x1" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
-        </div>
-
-        <div class="md:col-span-3 pt-2">
-          <button type="submit" id="btnSubmit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-lg transition shadow-md flex items-center justify-center gap-2">
-            <i data-lucide="save" class="w-5 h-5"></i>
-            <span>Simpan Rekam Medis</span>
-          </button>
-        </div>
-      </form>
     </div>
 
-    <!-- Tabel Rekap Data -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4">
-        <div>
-          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <i data-lucide="table" class="w-5 h-5 text-emerald-600"></i>
-            <span>Rekapitulasi Riwayat Periksa</span>
-          </h2>
+    <!-- TAB 2: ANALYTICS & GRAFIK -->
+    <div id="tab-analytics" class="space-y-6 tab-content hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Chart 1: Status Distribution -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+          <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <i data-lucide="pie-chart" class="w-4 h-4 text-brand-600"></i>
+            <span>Proporsi Tindak Lanjut Pasien Santri</span>
+          </h3>
+          <div class="h-64 flex items-center justify-center">
+            <canvas id="chartStatus"></canvas>
+          </div>
         </div>
-        
-        <div class="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
-          <select id="filterStatus" onchange="filterData()" class="border border-slate-300 rounded-lg p-2 text-sm outline-none w-full sm:w-auto bg-white">
-            <option value="ALL">Semua Status</option>
-            <option value="Kembali ke Kamar">Kembali ke Kamar</option>
-            <option value="Istirahat di Poskestren">Istirahat di Poskestren</option>
-            <option value="Rujuk Rumah Sakit">Rujuk Rumah Sakit</option>
-          </select>
-          <input type="text" id="searchBar" onkeyup="filterData()" placeholder="Cari NIS / Nama / Keluhan..." class="border border-slate-300 rounded-lg p-2 text-sm outline-none w-full sm:w-64">
-        </div>
-      </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="bg-slate-50 text-slate-700 uppercase text-xs font-semibold border-b border-slate-200">
-              <th class="p-3">Tanggal</th>
-              <th class="p-3">Santri</th>
-              <th class="p-3">Keluhan</th>
-              <th class="p-3">Diagnosa</th>
-              <th class="p-3">Obat / Terapi</th>
-              <th class="p-3">Status</th>
-              <th class="p-3">Petugas</th>
-              <th class="p-3 text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="tabelBody" class="divide-y divide-slate-100 text-sm">
-            <!-- Dynamic Content -->
-          </tbody>
-        </table>
+        <!-- Chart 2: Top Diagnoses -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+          <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <i data-lucide="bar-chart-2" class="w-4 h-4 text-brand-600"></i>
+            <span>Diagnosa Terbanyak Saat Kunjungan</span>
+          </h3>
+          <div class="h-64 flex items-center justify-center">
+            <canvas id="chartDiagnosa"></canvas>
+          </div>
+        </div>
       </div>
     </div>
+
   </main>
 
   <!-- Modal Konfigurasi Supabase -->
-  <div id="modalConfig" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+  <div id="modalConfig" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4 border border-slate-100 transform transition-all">
       <div class="flex items-center justify-between border-b pb-3">
-        <h3 class="font-bold text-slate-800 text-lg">Konfigurasi Supabase</h3>
-        <button onclick="toggleModal('modalConfig')" class="text-slate-400 hover:text-slate-600">
+        <div class="flex items-center gap-2">
+          <div class="p-2 bg-emerald-100 text-emerald-800 rounded-lg">
+            <i data-lucide="key" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-slate-800 text-base">Pengaturan Supabase API</h3>
+        </div>
+        <button onclick="closeModal('modalConfig')" class="text-slate-400 hover:text-slate-600 p-1">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
-      <p class="text-xs text-slate-500">Kunci API tersimpan secara lokal di browser Anda.</p>
+
+      <p class="text-xs text-slate-500 leading-relaxed">
+        Kredensial API disimpan secara aman di <strong>Local Storage</strong> browser Anda. Tidak disimpan di server publik mana pun.
+      </p>
+
       <div class="space-y-3">
         <div>
-          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Supabase URL</label>
-          <input type="text" id="cfgUrl" placeholder="https://xxx.supabase.co" class="w-full border border-slate-300 p-2 rounded text-sm outline-none">
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Project URL Supabase</label>
+          <input type="text" id="cfgUrl" placeholder="https://xyz.supabase.co" class="w-full border border-slate-300 p-2.5 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-500">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Supabase Anon Key</label>
-          <input type="password" id="cfgKey" placeholder="eyJhbG..." class="w-full border border-slate-300 p-2 rounded text-sm outline-none">
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Anon API Key</label>
+          <input type="password" id="cfgKey" placeholder="eyJhbGciOiJIUzI1Ni..." class="w-full border border-slate-300 p-2.5 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-500">
         </div>
       </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t">
+        <button onclick="closeModal('modalConfig')" class="px-4 py-2 text-xs font-semibold text-slate-600 border border-slate-300 rounded-xl hover:bg-slate-50 transition">Batal</button>
+        <button onclick="saveConfig()" class="px-4 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-sm transition">Simpan Kredensial</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Confirm Delete Custom (No Alert Native) -->
+  <div id="modalDelete" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center space-y-4 border border-slate-100">
+      <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h3 class="font-bold text-slate-800 text-base">Hapus Rekam Medis?</h3>
+        <p class="text-xs text-slate-500 mt-1">Tindakan ini tidak dapat dibatalkan. Data pemeriksaan ini akan terhapus dari database.</p>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeModal('modalDelete')" class="w-1/2 py-2 text-xs font-semibold text-slate-600 border border-slate-300 rounded-xl hover:bg-slate-50">Batal</button>
+        <button id="btnConfirmDelete" class="w-1/2 py-2 text-xs font-semibold bg-rose-600 text-white rounded-xl hover:bg-rose-700 shadow-sm">Ya, Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal & Layout Printable Surat Izin / Rujukan -->
+  <div id="modalPrint" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-slate-100">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+          <i data-lucide="printer" class="w-5 h-5 text-brand-600"></i>
+          <span>Cetak Surat Keterangan / Rujukan</span>
+        </h3>
+        <button onclick="closeModal('modalPrint')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div id="printPreviewContent" class="p-4 bg-slate-50 border rounded-xl text-xs space-y-2">
+        <!-- Preview text generated dynamically -->
+      </div>
+
       <div class="flex justify-end gap-2 pt-2">
-        <button onclick="toggleModal('modalConfig')" class="px-4 py-2 text-xs font-semibold text-slate-600 border rounded-lg">Batal</button>
-        <button onclick="saveConfig()" class="px-4 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Simpan Credentials</button>
+        <button onclick="closeModal('modalPrint')" class="px-4 py-2 text-xs font-semibold text-slate-600 border rounded-xl">Tutup</button>
+        <button onclick="triggerPrint()" class="px-4 py-2 text-xs font-semibold bg-brand-600 text-white rounded-xl hover:bg-brand-700 flex items-center gap-1.5">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+          <span>Cetak Halaman Ini</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Format Tampilan Cetak Resmi Surat (Print Mode Only) -->
+  <div id="printableArea" class="print-only p-8 text-black space-y-6">
+    <div class="text-center border-b-2 border-black pb-4">
+      <h2 class="text-xl font-bold uppercase tracking-wider">POSKESTREN & KLINIK PONDOK PESANTREN</h2>
+      <p class="text-sm">Jl. Pesantren No. 01, Kompleks Pendidikan Pondok Pesantren</p>
+      <p class="text-xs italic">Email: poskestren@pesantren.ac.id | Telp: (021) 88997700</p>
+    </div>
+
+    <div class="text-center my-4">
+      <h3 class="text-base font-bold underline uppercase" id="printJudulSurat">SURAT KETERANGAN ISTIRAHAT SAKIT</h3>
+      <p class="text-xs" id="printNoSurat">No: Poskestren/SK/2026/001</p>
+    </div>
+
+    <div class="space-y-3 text-sm leading-relaxed">
+      <p>Yang bertanda tangan di bawah ini Petugas Kesehatan Poskestren menerangkan bahwa:</p>
+      <table class="w-full text-sm my-2">
+        <tr><td class="w-32 py-1 font-semibold">Nama Santri</td><td>: <span id="printNama"></span></td></tr>
+        <tr><td class="py-1 font-semibold">NIS</td><td>: <span id="printNis"></span></td></tr>
+        <tr><td class="py-1 font-semibold">Kelas / Asrama</td><td>: <span id="printKelas"></span></td></tr>
+        <tr><td class="py-1 font-semibold">Tanggal Periksa</td><td>: <span id="printTanggal"></span></td></tr>
+        <tr><td class="py-1 font-semibold">Diagnosa Utama</td><td>: <span id="printDiagnosa"></span></td></tr>
+        <tr><td class="py-1 font-semibold">Status / Tindak Lanjut</td><td>: <span id="printStatus" class="font-bold"></span></td></tr>
+      </table>
+      <p>Diberikan rekomendasi/petunjuk penanganan berdasarkan keluhan: <i id="printKeluhan"></i></p>
+      <p>Demikian surat keterangan ini diberikan untuk dipergunakan sebagaimana mestinya.</p>
+    </div>
+
+    <div class="flex justify-between items-end pt-12 text-sm">
+      <div class="text-center">
+        <p>Santri Bersangkutan,</p>
+        <div class="h-16"></div>
+        <p class="font-bold" id="printTtdSantri">( ........................................ )</p>
+      </div>
+      <div class="text-center">
+        <p>Petugas Klinik / Nakes,</p>
+        <div class="h-16"></div>
+        <p class="font-bold" id="printTtdPetugas">( Ust. Farhan )</p>
       </div>
     </div>
   </div>
@@ -221,9 +464,52 @@
   <script>
     let rawData = [];
     let _supabase = null;
+    let deleteTargetId = null;
+    let chartStatusInstance = null;
+    let chartDiagnosaInstance = null;
 
-    // Default Fallback / Initialization
+    // Initialize Default Date
     document.getElementById('tanggal').valueAsDate = new Date();
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      const bgColor = type === 'success' ? 'bg-emerald-800 text-white border-emerald-700' : 'bg-rose-800 text-white border-rose-700';
+      const icon = type === 'success' ? 'check-circle' : 'alert-circle';
+
+      toast.className = `pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-xl shadow-xl border ${bgColor} text-xs transition-all transform duration-300 ease-out translate-y-2 opacity-0`;
+      toast.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i> <span>${escapeHtml(message)}</span>`;
+
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 10);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
+        btn.classList.add('text-slate-600');
+      });
+
+      document.getElementById(tabId).classList.remove('hidden');
+      const activeBtn = document.getElementById(`btn-${tabId}`);
+      activeBtn.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+      activeBtn.classList.remove('text-slate-600');
+
+      if (tabId === 'tab-analytics') {
+        renderAnalyticsCharts();
+      }
+    }
 
     function initSupabase() {
       const url = localStorage.getItem('SP_URL') || '';
@@ -233,10 +519,14 @@
       document.getElementById('cfgKey').value = key;
 
       if (url && key) {
-        _supabase = supabase.createClient(url, key);
-        loadData();
+        try {
+          _supabase = supabase.createClient(url, key);
+          loadData();
+        } catch (e) {
+          showToast('Kredensial Supabase tidak valid.', 'error');
+        }
       } else {
-        toggleModal('modalConfig');
+        openModal('modalConfig');
       }
     }
 
@@ -245,19 +535,23 @@
       const key = document.getElementById('cfgKey').value.trim();
 
       if (!url || !key) {
-        alert('Harap isi URL dan Anon Key Supabase!');
+        showToast('Harap isi URL dan Key Supabase!', 'error');
         return;
       }
 
       localStorage.setItem('SP_URL', url);
       localStorage.setItem('SP_KEY', key);
-      toggleModal('modalConfig');
+      closeModal('modalConfig');
+      showToast('Kredensial berhasil disimpan!');
       initSupabase();
     }
 
-    function toggleModal(id) {
-      const modal = document.getElementById(id);
-      modal.classList.toggle('hidden');
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
     }
 
     async function loadData() {
@@ -269,7 +563,7 @@
         .order('tanggal_periksa', { ascending: false });
 
       if (error) {
-        alert('Gagal mengambil data: ' + error.message);
+        showToast('Gagal memuat data: ' + error.message, 'error');
         return;
       }
 
@@ -292,35 +586,42 @@
       if (dataList.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="8" class="text-center py-8 text-slate-400">Belum ada rekam medis yang dicatat.</td>
+            <td colspan="8" class="text-center py-10 text-slate-400">
+              <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
+              Belum ada data pemeriksaan santri.
+            </td>
           </tr>
         `;
+        lucide.createIcons();
         return;
       }
 
       dataList.forEach(item => {
-        let badgeStyle = 'bg-blue-100 text-blue-800';
-        if (item.status_tindak_lanjut === 'Istirahat di Poskestren') badgeStyle = 'bg-amber-100 text-amber-800';
-        if (item.status_tindak_lanjut === 'Rujuk Rumah Sakit') badgeStyle = 'bg-rose-100 text-rose-800';
+        let badgeStyle = 'bg-blue-50 text-blue-700 border-blue-200';
+        if (item.status_tindak_lanjut === 'Istirahat di Poskestren') badgeStyle = 'bg-amber-50 text-amber-700 border-amber-200';
+        if (item.status_tindak_lanjut === 'Rujuk Rumah Sakit') badgeStyle = 'bg-rose-50 text-rose-700 border-rose-200';
 
         tbody.innerHTML += `
-          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-            <td class="p-3 text-slate-600 whitespace-nowrap font-medium">${item.tanggal_periksa}</td>
-            <td class="p-3">
+          <tr class="hover:bg-slate-50/80 transition border-b border-slate-100">
+            <td class="p-3.5 font-medium text-slate-600 whitespace-nowrap">${item.tanggal_periksa}</td>
+            <td class="p-3.5">
               <div class="font-bold text-slate-800">${escapeHtml(item.nama_santri)}</div>
-              <div class="text-xs text-slate-500">NIS: ${escapeHtml(item.nis)} (${escapeHtml(item.kelas_asrama)})</div>
+              <div class="text-[11px] text-slate-400">NIS: ${escapeHtml(item.nis)} • ${escapeHtml(item.kelas_asrama)}</div>
             </td>
-            <td class="p-3 text-slate-700 max-w-xs">${escapeHtml(item.keluhan)}</td>
-            <td class="p-3 text-slate-700">${escapeHtml(item.diagnosa || '-')}</td>
-            <td class="p-3 text-slate-700">${escapeHtml(item.terapi_obat || '-')}</td>
-            <td class="p-3 whitespace-nowrap">
-              <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${badgeStyle}">
+            <td class="p-3.5 text-slate-700 max-w-xs font-normal">${escapeHtml(item.keluhan)}</td>
+            <td class="p-3.5 text-slate-700 font-medium">${escapeHtml(item.diagnosa || '-')}</td>
+            <td class="p-3.5 text-slate-700">${escapeHtml(item.terapi_obat || '-')}</td>
+            <td class="p-3.5 whitespace-nowrap">
+              <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold border ${badgeStyle}">
                 ${item.status_tindak_lanjut}
               </span>
             </td>
-            <td class="p-3 text-xs text-slate-600">${escapeHtml(item.petugas)}</td>
-            <td class="p-3 text-center">
-              <button onclick="deleteRecord(${item.id})" class="text-slate-400 hover:text-rose-600 p-1 transition" title="Hapus Data">
+            <td class="p-3.5 text-slate-500 text-[11px]">${escapeHtml(item.petugas)}</td>
+            <td class="p-3.5 text-center whitespace-nowrap space-x-1">
+              <button onclick="preparePrint(${item.id})" class="p-1.5 text-slate-500 hover:text-brand-600 hover:bg-slate-100 rounded-lg transition" title="Cetak Surat">
+                <i data-lucide="printer" class="w-4 h-4"></i>
+              </button>
+              <button onclick="promptDelete(${item.id})" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Hapus Data">
                 <i data-lucide="trash-2" class="w-4 h-4"></i>
               </button>
             </td>
@@ -339,7 +640,8 @@
         const matchesQuery = 
           item.nama_santri.toLowerCase().includes(query) ||
           item.nis.toLowerCase().includes(query) ||
-          item.keluhan.toLowerCase().includes(query);
+          item.keluhan.toLowerCase().includes(query) ||
+          (item.diagnosa && item.diagnosa.toLowerCase().includes(query));
 
         const matchesStatus = statusFilter === 'ALL' || item.status_tindak_lanjut === statusFilter;
 
@@ -349,18 +651,20 @@
       renderTable(filtered);
     }
 
+    // Form Submit Event Handler
     document.getElementById('formPeriksa').addEventListener('submit', async (e) => {
       e.preventDefault();
 
       if (!_supabase) {
-        alert('Harap atur kredensial Supabase terlebih dahulu!');
-        toggleModal('modalConfig');
+        showToast('Atur Kredensial Supabase Terlebih Dahulu!', 'error');
+        openModal('modalConfig');
         return;
       }
 
       const btn = document.getElementById('btnSubmit');
       btn.disabled = true;
-      btn.innerText = 'Menyimpan...';
+      btn.innerHTML = `<i data-lucide="loader" class="w-5 h-5 animate-spin"></i><span>Menyimpan...</span>`;
+      lucide.createIcons();
 
       const payload = {
         nis: document.getElementById('nis').value.trim(),
@@ -377,29 +681,134 @@
       const { error } = await _supabase.from('rekam_medis_santri').insert([payload]);
 
       btn.disabled = false;
-      btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i><span>Simpan Rekam Medis</span>`;
+      btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i><span>Simpan Record Pemeriksaan</span>`;
       lucide.createIcons();
 
       if (error) {
-        alert('Gagal menyimpan rekam medis: ' + error.message);
+        showToast('Gagal menyimpan: ' + error.message, 'error');
       } else {
-        alert('Data rekam medis berhasil dicatat!');
+        showToast('Rekam medis santri berhasil dicatat!');
         document.getElementById('formPeriksa').reset();
         document.getElementById('tanggal').valueAsDate = new Date();
         loadData();
       }
     });
 
-    async function deleteRecord(id) {
-      if (!confirm('Apakah Anda yakin ingin menghapus data pemeriksaan ini?')) return;
+    // Delete Modal Logic
+    function promptDelete(id) {
+      deleteTargetId = id;
+      openModal('modalDelete');
+    }
 
-      const { error } = await _supabase.from('rekam_medis_santri').delete().eq('id', id);
+    document.getElementById('btnConfirmDelete').addEventListener('click', async () => {
+      if (!deleteTargetId || !_supabase) return;
+
+      const { error } = await _supabase.from('rekam_medis_santri').delete().eq('id', deleteTargetId);
+      closeModal('modalDelete');
 
       if (error) {
-        alert('Gagal menghapus data: ' + error.message);
+        showToast('Gagal menghapus: ' + error.message, 'error');
       } else {
+        showToast('Data berhasil dihapus');
         loadData();
       }
+    });
+
+    function preparePrint(id) {
+      const item = rawData.find(d => d.id === id);
+      if (!item) return;
+
+      document.getElementById('printNama').innerText = item.nama_santri;
+      document.getElementById('printNis').innerText = item.nis;
+      document.getElementById('printKelas').innerText = item.kelas_asrama;
+      document.getElementById('printTanggal').innerText = item.tanggal_periksa;
+      document.getElementById('printDiagnosa').innerText = item.diagnosa || 'Pemeriksaan Rutin';
+      document.getElementById('printStatus').innerText = item.status_tindak_lanjut;
+      document.getElementById('printKeluhan').innerText = item.keluhan;
+      document.getElementById('printTtdSantri').innerText = `( ${item.nama_santri} )`;
+      document.getElementById('printTtdPetugas').innerText = `( ${item.petugas} )`;
+
+      const previewDiv = document.getElementById('printPreviewContent');
+      previewDiv.innerHTML = `
+        <p><strong>Santri:</strong> ${escapeHtml(item.nama_santri)} (${escapeHtml(item.nis)})</p>
+        <p><strong>Diagnosa:</strong> ${escapeHtml(item.diagnosa || '-')}</p>
+        <p><strong>Status:</strong> ${escapeHtml(item.status_tindak_lanjut)}</p>
+        <p class="text-[11px] text-slate-500 mt-2">* Siap dicetak untuk lampiran izin piket / ustaz asrama.</p>
+      `;
+
+      openModal('modalPrint');
+    }
+
+    function triggerPrint() {
+      window.print();
+    }
+
+    function exportCSV() {
+      if (rawData.length === 0) {
+        showToast('Belum ada data untuk di-export', 'error');
+        return;
+      }
+
+      let csvContent = "data:text/csv;charset=utf-8,ID,Tanggal,NIS,Nama,Kelas,Petugas,Status,Keluhan,Diagnosa,Terapi\n";
+      rawData.forEach(r => {
+        csvContent += `"${r.id}","${r.tanggal_periksa}","${r.nis}","${r.nama_santri}","${r.kelas_asrama}","${r.petugas}","${r.status_tindak_lanjut}","${r.keluhan.replace(/"/g, '""')}","${(r.diagnosa||'').replace(/"/g, '""')}","${(r.terapi_obat||'').replace(/"/g, '""')}"\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `rekam_medis_santri_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function renderAnalyticsCharts() {
+      const statusCounts = {
+        'Kembali ke Kamar': rawData.filter(d => d.status_tindak_lanjut === 'Kembali ke Kamar').length,
+        'Istirahat di Poskestren': rawData.filter(d => d.status_tindak_lanjut === 'Istirahat di Poskestren').length,
+        'Rujuk Rumah Sakit': rawData.filter(d => d.status_tindak_lanjut === 'Rujuk Rumah Sakit').length,
+      };
+
+      if (chartStatusInstance) chartStatusInstance.destroy();
+      const ctx1 = document.getElementById('chartStatus').getContext('2d');
+      chartStatusInstance = new Chart(ctx1, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(statusCounts),
+          datasets: [{
+            data: Object.values(statusCounts),
+            backgroundColor: ['#10b981', '#f59e0b', '#f43f5e']
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      // Diagnoses aggregation
+      const diagMap = {};
+      rawData.forEach(r => {
+        if (r.diagnosa) {
+          diagMap[r.diagnosa] = (diagMap[r.diagnosa] || 0) + 1;
+        }
+      });
+
+      const diagLabels = Object.keys(diagMap).slice(0, 5);
+      const diagData = diagLabels.map(k => diagMap[k]);
+
+      if (chartDiagnosaInstance) chartDiagnosaInstance.destroy();
+      const ctx2 = document.getElementById('chartDiagnosa').getContext('2d');
+      chartDiagnosaInstance = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+          labels: diagLabels.length > 0 ? diagLabels : ['Belum Ada Diagnosa'],
+          datasets: [{
+            label: 'Jumlah Kasus',
+            data: diagData.length > 0 ? diagData : [0],
+            backgroundColor: '#059669'
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
     }
 
     function escapeHtml(str) {
