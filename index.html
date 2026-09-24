@@ -487,68 +487,20 @@
         <p class="text-xs text-slate-500">Masukkan Project URL dan Anon Public Key dari Dashboard Supabase Anda (Project Settings > API).</p>
         <div>
           <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Supabase Project URL</label>
-          <input type="text" id="cfgUrl" placeholder="https://xyz.supabase.co" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs outline-none">
+          <input type="text" id="cfgUrl" placeholder="https://xyz.supabase.co" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs outline-none focus:ring-2 focus:ring-brand-500">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Supabase Anon Key</label>
-          <input type="password" id="cfgKey" placeholder="eyJhbGciOi..." class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs outline-none">
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Supabase Anon Key (Public)</label>
+          <input type="password" id="cfgKey" placeholder="eyJhbGciOi..." class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs outline-none focus:ring-2 focus:ring-brand-500">
         </div>
+        <div id="testConnectionStatus" class="hidden p-3 rounded-xl text-xs font-medium border"></div>
       </div>
 
       <div class="flex justify-end gap-2 pt-2">
         <button onclick="closeModal('modalSupabase')" class="px-4 py-2 text-xs font-semibold text-slate-600 border rounded-xl">Batal</button>
-        <button onclick="saveSupabaseConfig()" class="px-4 py-2 text-xs font-semibold bg-brand-600 text-white rounded-xl hover:bg-brand-700">Simpan & Hubungkan</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Confirm Delete -->
-  <div id="modalDelete" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center space-y-4">
-      <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
-        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
-      </div>
-      <div>
-        <h3 class="font-bold text-slate-800 text-base">Hapus Rekam Medis?</h3>
-        <p class="text-xs text-slate-500 mt-1">Data akan terhapus dari Supabase Database secara permanen.</p>
-      </div>
-      <div class="flex gap-2 pt-2">
-        <button onclick="closeModal('modalDelete')" class="w-1/2 py-2 text-xs font-semibold text-slate-600 border rounded-xl">Batal</button>
-        <button id="btnConfirmDelete" class="w-1/2 py-2 text-xs font-semibold bg-rose-600 text-white rounded-xl hover:bg-rose-700">Ya, Hapus</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalImportSantri" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-slate-100">
-      <div class="flex items-center justify-between border-b pb-3">
-        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-          <i data-lucide="file-text" class="w-5 h-5 text-brand-600"></i>
-          <span>Import Massal Data Santri</span>
-        </h3>
-        <button onclick="closeModal('modalImportSantri')" class="text-slate-400 hover:text-slate-600">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="space-y-3">
-        <p class="text-xs text-slate-600">
-          Tempelkan (Paste) data santri Anda dari Excel/Notepad dengan format baris demi baris:
-          <br><code class="bg-slate-100 px-1 py-0.5 rounded text-[11px] font-mono text-brand-700">NIS, Nama Santri, Kelas, Kamar, Ustadz</code>
-        </p>
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Data Teks / CSV</label>
-          <textarea id="importRawText" rows="6" placeholder="2024001, Ahmad Zaki Fuadi, 10-A, Kamar Umar 01, Ust. Farhan
-2024002, Muhammad Ali, 10-B, Kamar Abu Bakar 02, Ust. Ridwan
-2024003, Usman Harun, 11-A, Kamar Ali 03, Ust. Farhan" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono outline-none focus:ring-2 focus:ring-brand-500"></textarea>
-        </div>
-      </div>
-
-      <div class="flex justify-end gap-2 pt-2">
-        <button onclick="closeModal('modalImportSantri')" class="px-4 py-2 text-xs font-semibold text-slate-600 border rounded-xl">Batal</button>
-        <button onclick="handleBulkImportSantri()" class="px-4 py-2 text-xs font-semibold bg-brand-600 text-white rounded-xl hover:bg-brand-700 flex items-center gap-1.5">
-          <i data-lucide="upload" class="w-4 h-4"></i>
-          <span>Proses Import Data</span>
+        <button onclick="testAndSaveSupabaseConfig()" id="btnSaveConfig" class="px-4 py-2 text-xs font-semibold bg-brand-600 text-white rounded-xl hover:bg-brand-700 flex items-center gap-1">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span>Tes & Simpan Koneksi</span>
         </button>
       </div>
     </div>
@@ -560,7 +512,6 @@
     let SUPABASE_KEY = localStorage.getItem('POSKESTREN_SUPABASE_KEY') || '';
     let _supabase = null;
 
-    // Toast Notification System
     function showToast(message, type = 'success') {
       const container = document.getElementById('toastContainer');
       if (!container) return;
@@ -578,102 +529,47 @@
       setTimeout(() => {
         toast.classList.add('opacity-0', 'translate-y-2');
         setTimeout(() => toast.remove(), 300);
-      }, 3000);
+      }, 3500);
     }
-
-    // Session & Auth Handling
-    function checkAuth() {
-      const isLoggedIn = sessionStorage.getItem('POSKESTREN_LOGGED_IN') === 'true';
-      const loginScreen = document.getElementById('loginScreen');
-      const mainApp = document.getElementById('mainApp');
-
-      if (isLoggedIn) {
-        if (loginScreen) loginScreen.classList.add('hidden');
-        if (mainApp) mainApp.classList.remove('hidden');
-        initSupabaseClient();
-        loadData();
-      } else {
-        if (loginScreen) loginScreen.classList.remove('hidden');
-        if (mainApp) mainApp.classList.add('hidden');
-      }
-    }
-
-    function handleLogin(e) {
-      if (e) e.preventDefault();
-      sessionStorage.setItem('POSKESTREN_LOGGED_IN', 'true');
-      checkAuth();
-      showToast('Berhasil masuk ke sistem Poskestren!');
-    }
-
-    function handleLogout() {
-      sessionStorage.removeItem('POSKESTREN_LOGGED_IN');
-      checkAuth();
-      showToast('Berhasil keluar dari sistem');
-    }
-
-    // Navigation & Tab Switcher
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
-        btn.classList.add('text-slate-600');
-      });
-
-      const activeContent = document.getElementById(tabId);
-      if (activeContent) activeContent.classList.remove('hidden');
-
-      const activeBtn = document.getElementById(`btn-${tabId}`);
-      if (activeBtn) {
-        activeBtn.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
-        activeBtn.classList.remove('text-slate-600');
-      }
-
-      if (tabId === 'tab-analytics') {
-        renderAnalyticsCharts();
-      }
-    }
-
-    // Modal Display Controls
-    function openModal(id) {
-      const modal = document.getElementById(id);
-      if (modal) {
-        modal.classList.remove('hidden');
-        if (id === 'modalSupabase') {
-          document.getElementById('cfgUrl').value = SUPABASE_URL;
-          document.getElementById('cfgKey').value = SUPABASE_KEY;
-        }
-      }
-    }
-
-    function closeModal(id) {
-      const modal = document.getElementById(id);
-      if (modal) modal.classList.add('hidden');
-    }
-
-    // Data Awal (Demo) Santri jika database masih kosong
-    const INITIAL_SAMPLE_SANTRI = [
-      { id: 101, nis: '2024001', nama: 'Ahmad Zaki Fuadi', kelas: '10-A IPA', kamar: 'Kamar Umar 01', ustadz: 'Ust. Farhan' },
-      { id: 102, nis: '2024002', nama: 'Muhammad Ali Imran', kelas: '10-B IPS', kamar: 'Kamar Abu Bakar 02', ustadz: 'Ust. Ridwan' },
-      { id: 103, nis: '2024003', nama: 'Usman Abdul Aziz', kelas: '11-A IPA', kamar: 'Kamar Ali 03', ustadz: 'Ust. Farhan' },
-      { id: 104, nis: '2024004', nama: 'Fatimah Az-Zahra', kelas: '10-C IPA', kamar: 'Kamar Khadijah 01', ustadz: 'Ustz. Maryam' },
-      { id: 105, nis: '2024005', nama: 'Bilal Bin Rabah', kelas: '12-A IPA', kamar: 'Kamar Utsman 04', ustadz: 'Ust. Ridwan' }
-    ];
-
-    let rawData = [];
-    let masterSantri = [];
-    let deleteTargetId = null;
-    let chartStatusInstance = null;
-    let chartDiagnosaInstance = null;
-
-    document.getElementById('tanggal').valueAsDate = new Date();
 
     function formatSupabaseUrl(url) {
       if (!url) return '';
-      let cleaned = url.trim().replace(/^["']|["']$/g, ''); // Hapus spasi dan kutip jika terikut
-      if (cleaned && !cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
+      let cleaned = url.trim().replace(/^["']|["']$/g, '');
+      cleaned = cleaned.replace(/^(https?:\/\/)+/i, 'https://');
+      if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
         cleaned = 'https://' + cleaned;
       }
+      cleaned = cleaned.replace(/\/+$/, '');
       return cleaned;
+    }
+
+    async function testSupabaseConnection(url, key) {
+      const cleanUrl = formatSupabaseUrl(url);
+      const cleanKey = key ? key.trim().replace(/^["']|["']$/g, '') : '';
+
+      if (!cleanUrl || !cleanKey) {
+        return { ok: false, message: 'URL dan Key tidak boleh kosong.' };
+      }
+
+      try {
+        new URL(cleanUrl);
+      } catch (e) {
+        return { ok: false, message: 'Format URL tidak valid. Contoh: https://xxxx.supabase.co' };
+      }
+
+      try {
+        const res = await fetch(`${cleanUrl}/rest/v1/`, {
+          headers: { 'apikey': cleanKey, 'Authorization': `Bearer ${cleanKey}` }
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          return { ok: false, message: 'Anon Key / Public Key salah (Error 401/403). Salin ulang dari Project Settings > API.' };
+        }
+        
+        return { ok: true, message: 'Terhubung! Supabase REST API merespon dengan sukses.' };
+      } catch (err) {
+        return { ok: false, message: 'Gagal menghubungi server. Pastikan URL benar, jaringan stabil, dan project Supabase tidak sedang paused.' };
+      }
     }
 
     function initSupabaseClient() {
@@ -682,10 +578,10 @@
 
       if (formattedUrl && cleanKey && window.supabase) {
         try {
-          new URL(formattedUrl); // Uji keabsahan URL
+          new URL(formattedUrl);
           _supabase = supabase.createClient(formattedUrl, cleanKey);
           document.getElementById('connectionBadge').innerText = "Supabase Active";
-          document.getElementById('syncStatus').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Supabase Cloud Terhubung`;
+          document.getElementById('syncStatus').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Supabase Terhubung`;
           return true;
         } catch (err) {
           console.error("Format URL Supabase Salah:", err);
@@ -702,24 +598,33 @@
       }
     }
 
-    function saveSupabaseConfig() {
+    async function testAndSaveSupabaseConfig() {
+      const statusDiv = document.getElementById('testConnectionStatus');
+      const btn = document.getElementById('btnSaveConfig');
+      
       let u = document.getElementById('cfgUrl').value;
       let k = document.getElementById('cfgKey').value;
-      
+
       u = formatSupabaseUrl(u);
       k = k ? k.trim().replace(/^["']|["']$/g, '') : '';
 
-      if (!u || !k) {
-        showToast('Mohon isi URL dan Anon Key!', 'error');
+      statusDiv.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-800', 'border-emerald-200', 'bg-rose-50', 'text-rose-800', 'border-rose-200');
+      statusDiv.className = "p-3 rounded-xl text-xs font-medium border bg-blue-50 text-blue-800 border-blue-200";
+      statusDiv.innerHTML = `<span class="animate-pulse">Sedang menguji koneksi ke Supabase...</span>`;
+
+      btn.disabled = true;
+      const testResult = await testSupabaseConnection(u, k);
+      btn.disabled = false;
+
+      if (!testResult.ok) {
+        statusDiv.className = "p-3 rounded-xl text-xs font-medium border bg-rose-50 text-rose-800 border-rose-200";
+        statusDiv.innerHTML = `⚠️ <b>Koneksi Gagal:</b> ${testResult.message}`;
+        showToast(testResult.message, 'error');
         return;
       }
 
-      try {
-        new URL(u);
-      } catch (e) {
-        showToast('Format URL Supabase salah! Contoh: https://xyz.supabase.co', 'error');
-        return;
-      }
+      statusDiv.className = "p-3 rounded-xl text-xs font-medium border bg-emerald-50 text-emerald-800 border-emerald-200";
+      statusDiv.innerHTML = `✅ <b>Koneksi Berhasil!</b> Menyimpan kredensial...`;
 
       localStorage.setItem('POSKESTREN_SUPABASE_URL', u);
       localStorage.setItem('POSKESTREN_SUPABASE_KEY', k);
@@ -727,34 +632,50 @@
       SUPABASE_KEY = k;
 
       initSupabaseClient();
-      closeModal('modalSupabase');
-      showToast('Koneksi Supabase berhasil disimpan! Memuat data...');
-      loadData();
+      setTimeout(() => {
+        closeModal('modalSupabase');
+        statusDiv.classList.add('hidden');
+        showToast('Koneksi Supabase Berhasil Terhubung!');
+        loadData();
+      }, 1000);
     }
 
     async function loadData() {
       if (_supabase) {
         try {
-          // Load Master Santri dari Supabase
+          // Load Master Santri
           const { data: mData, error: mErr } = await _supabase.from('master_santri').select('*').order('nama', { ascending: true });
-          if (!mErr && mData && mData.length > 0) {
-            masterSantri = mData;
-          } else if (mErr) {
+          if (mErr) {
             console.error("Master Santri Error:", mErr);
-            showToast('Gagal memuat Master Santri: ' + mErr.message, 'error');
+            if (mErr.code === '42P01' || mErr.message?.includes('does not exist')) {
+              showToast('Tabel "master_santri" belum ada! Jalankan skrip setup_supabase.sql.', 'error');
+            } else {
+              showToast('Error Master Santri: ' + mErr.message, 'error');
+            }
+          } else if (mData) {
+            masterSantri = mData;
           }
 
-          // Load Rekam Medis dari Supabase
+          // Load Rekam Medis
           const { data: rData, error: rErr } = await _supabase.from('rekam_medis_santri').select('*').order('created_at', { ascending: false });
-          if (!rErr && rData) {
-            rawData = rData;
-          } else if (rErr) {
+          if (rErr) {
             console.error("Rekam Medis Error:", rErr);
-            showToast('Gagal memuat Rekam Medis: ' + rErr.message, 'error');
+            if (rErr.code === '42P01' || rErr.message?.includes('does not exist')) {
+              showToast('Tabel "rekam_medis_santri" belum ada! Jalankan skrip setup_supabase.sql.', 'error');
+            } else {
+              showToast('Error Rekam Medis: ' + rErr.message, 'error');
+            }
+          } else if (rData) {
+            rawData = rData;
           }
+
+          document.getElementById('connectionBadge').innerText = "Supabase Active";
+          document.getElementById('syncStatus').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Supabase Terhubung`;
         } catch (e) {
           console.error("Load Data Exception:", e);
-          showToast('URL Supabase tidak valid. Silakan periksa di menu Koneksi Supabase', 'error');
+          document.getElementById('connectionBadge').innerText = "URL Error";
+          document.getElementById('syncStatus').innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> Koneksi Supabase Gagal`;
+          showToast('Koneksi gagal. Periksa kembali URL & Anon Key di tombol Koneksi Supabase.', 'error');
         }
       } else {
         // LocalStorage Fallback
