@@ -654,12 +654,29 @@
     function formatSupabaseUrl(url) {
       if (!url) return '';
       let cleaned = url.trim().replace(/^["']|["']$/g, '');
-      cleaned = cleaned.replace(/^(https?:\/\/)+/i, 'https://');
+      
+      // Deteksi jika pengguna menempelkan URL Dashboard Supabase
+      const dashMatch = cleaned.match(/supabase\.com\/dashboard\/project\/([a-zA-Z0-9]+)/i);
+      if (dashMatch && dashMatch[1]) {
+        return `https://${dashMatch[1]}.supabase.co`;
+      }
+
+      // Sediakan awalan https:// jika belum ada
       if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
         cleaned = 'https://' + cleaned;
       }
-      cleaned = cleaned.replace(/\/+$/, '');
-      return cleaned;
+
+      try {
+        const parsed = new URL(cleaned);
+        // Jika domain berakhiran .supabase.co, ambil murni protocol + hostname (membuang /rest/v1 dll)
+        if (parsed.hostname.endsWith('.supabase.co')) {
+          return `${parsed.protocol}//${parsed.hostname}`;
+        }
+        return parsed.origin;
+      } catch (e) {
+        cleaned = cleaned.replace(/\/+$/, '');
+        return cleaned;
+      }
     }
 
     async function testSupabaseConnection(url, key) {
@@ -683,6 +700,13 @@
 
         if (res.status === 401 || res.status === 403) {
           return { ok: false, message: 'Anon Key / Public Key salah (Error 401/403). Salin ulang dari Project Settings > API.' };
+        }
+
+        if (!res.ok) {
+          const errText = await res.text();
+          if (errText.includes('Invalid path')) {
+            return { ok: false, message: 'Format URL Supabase salah. Pastikan hanya memasukkan: https://<id-project>.supabase.co' };
+          }
         }
         
         return { ok: true, message: 'Terhubung! Supabase REST API merespon dengan sukses.' };
