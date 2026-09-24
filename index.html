@@ -506,11 +506,130 @@
     </div>
   </div>
 
+  <!-- Modal Konfirmasi Hapus -->
+  <div id="modalDelete" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4 border border-slate-100 text-center">
+      <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto">
+        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h3 class="font-bold text-slate-800 text-lg">Hapus Rekam Medis?</h3>
+        <p class="text-xs text-slate-500 mt-1">Data yang dihapus tidak dapat dikembalikan lagi.</p>
+      </div>
+      <div class="flex justify-center gap-3 pt-2">
+        <button onclick="closeModal('modalDelete')" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl">Batal</button>
+        <button id="btnConfirmDelete" class="px-4 py-2 text-xs font-semibold bg-rose-600 text-white hover:bg-rose-700 rounded-xl">Ya, Hapus Data</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Import Santri -->
+  <div id="modalImportSantri" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-slate-100">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+          <i data-lucide="file-up" class="w-5 h-5 text-brand-600"></i>
+          <span>Import Master Data Santri</span>
+        </h3>
+        <button onclick="closeModal('modalImportSantri')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-500">Format per baris: <code>NIS, Nama, Kelas, Kamar, Ustadz</code></p>
+      <textarea id="importRawText" rows="6" placeholder="2024001, Ahmad Zaki, 10-A, Kamar Abu Bakar, Ust. Farhan&#10;2024002, Muhammad Ali, 10-B, Kamar Umar, Ust. Farhan" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeModal('modalImportSantri')" class="px-4 py-2 text-xs font-semibold text-slate-600 border rounded-xl">Batal</button>
+        <button onclick="handleBulkImportSantri()" class="px-4 py-2 text-xs font-semibold bg-brand-600 text-white rounded-xl hover:bg-brand-700">Proses Import</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    let rawData = [];
+    let masterSantri = [];
+    let deleteTargetId = null;
+    let chartStatusInstance = null;
+    let chartDiagnosaInstance = null;
+
+    const INITIAL_SAMPLE_SANTRI = [
+      { id: 1, nis: "2024001", nama: "Ahmad Zaki Fuadi", kelas: "10-A IPA", kamar: "Kamar Abu Bakar 01", ustadz: "Ust. Farhan" },
+      { id: 2, nis: "2024002", nama: "Muhammad Ali Ridho", kelas: "10-B IPA", kamar: "Kamar Umar 02", ustadz: "Ust. Farhan" },
+      { id: 3, nis: "2024003", nama: "Fatimah Az-Zahra", kelas: "11-A IPS", kamar: "Kamar Khadijah 01", ustadz: "Ustdzh. Siti" }
+    ];
+
     // KREDENSIAL DEFAULT SUPABASE
     let SUPABASE_URL = localStorage.getItem('POSKESTREN_SUPABASE_URL') || '';
     let SUPABASE_KEY = localStorage.getItem('POSKESTREN_SUPABASE_KEY') || '';
     let _supabase = null;
+
+    function checkAuth() {
+      const isLoggedIn = sessionStorage.getItem('POSKESTREN_LOGGED_IN') === 'true';
+      const loginScreen = document.getElementById('loginScreen');
+      const mainApp = document.getElementById('mainApp');
+
+      if (isLoggedIn) {
+        loginScreen.classList.add('hidden');
+        mainApp.classList.remove('hidden');
+        mainApp.classList.add('flex');
+        initSupabaseClient();
+        loadData();
+      } else {
+        loginScreen.classList.remove('hidden');
+        mainApp.classList.add('hidden');
+        mainApp.classList.remove('flex');
+      }
+    }
+
+    function handleLogin(event) {
+      event.preventDefault();
+      const u = document.getElementById('loginUsername').value.trim();
+      const p = document.getElementById('loginPassword').value.trim();
+
+      if (u === 'admin' && p === 'poskestren123') {
+        sessionStorage.setItem('POSKESTREN_LOGGED_IN', 'true');
+        showToast('Login berhasil! Selamat datang di Poskestren Medical.');
+        checkAuth();
+      } else {
+        showToast('Username atau password salah! Default: admin / poskestren123', 'error');
+      }
+    }
+
+    function handleLogout() {
+      sessionStorage.removeItem('POSKESTREN_LOGGED_IN');
+      showToast('Anda telah keluar dari sistem.');
+      checkAuth();
+    }
+
+    function openModal(modalId) {
+      const m = document.getElementById(modalId);
+      if (m) m.classList.remove('hidden');
+    }
+
+    function closeModal(modalId) {
+      const m = document.getElementById(modalId);
+      if (m) m.classList.add('hidden');
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
+        btn.classList.add('text-slate-600');
+      });
+
+      const activeContent = document.getElementById(tabId);
+      if (activeContent) activeContent.classList.remove('hidden');
+
+      const activeBtn = document.getElementById(`btn-${tabId}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+        activeBtn.classList.remove('text-slate-600');
+      }
+
+      if (tabId === 'tab-analytics') {
+        renderAnalyticsCharts();
+      }
+    }
 
     function showToast(message, type = 'success') {
       const container = document.getElementById('toastContainer');
@@ -1051,6 +1170,7 @@
 
     window.onload = function() {
       lucide.createIcons();
+      document.getElementById('tanggal').valueAsDate = new Date();
       checkAuth();
     };
   </script>
