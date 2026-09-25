@@ -51,7 +51,6 @@
 </head>
 <body class="h-full text-slate-800 antialiased flex flex-col font-sans">
 
-  <!-- Toast Notification Container -->
   <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <!-- LOGIN SCREEN -->
@@ -90,7 +89,6 @@
     </div>
   </div>
 
-  <!-- MAIN APP CONTAINER -->
   <div id="mainApp" class="hidden flex-1 flex-col">
 
     <!-- Top Navigation Header -->
@@ -110,7 +108,7 @@
             </div>
           </div>
 
-          <div class="flex items-center space-x-3">
+          <div class="flex items-center space-x-2">
             <button onclick="openModal('modalSupabase')" class="text-xs bg-slate-800/80 hover:bg-slate-700 text-emerald-300 px-3 py-2 rounded-lg transition border border-emerald-500/40 flex items-center gap-1.5 shadow-sm">
               <i data-lucide="database" class="w-4 h-4"></i>
               <span class="hidden sm:inline">Koneksi Supabase</span>
@@ -125,8 +123,25 @@
       </div>
     </header>
 
-    <!-- Main Content Body -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 no-print">
+
+      <!-- Alert Warning / Error Banner jika Supabase Bermasalah -->
+      <div id="errorBanner" class="hidden bg-rose-50 border border-rose-200 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-sm">
+        <div class="flex items-start space-x-3">
+          <div class="p-2 bg-rose-100 text-rose-600 rounded-xl mt-0.5 md:mt-0">
+            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h4 class="text-xs font-bold text-rose-900 uppercase tracking-wide">Terjadi Kendala Koneksi Database / Supabase</h4>
+            <p id="errorBannerMsg" class="text-xs text-rose-700 mt-0.5">Sistem beralih ke Mode Penyimpanan Lokal sementara waktu.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 self-end md:self-auto">
+          <button onclick="openModal('modalSupabase')" class="text-xs bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg font-semibold transition">
+            Atur Ulang API Key
+          </button>
+        </div>
+      </div>
 
       <!-- Navigation Tabs -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
@@ -153,7 +168,6 @@
         </div>
       </div>
 
-      <!-- Stat Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
           <div class="flex items-center justify-between">
@@ -204,7 +218,6 @@
         </div>
       </div>
 
-      <!-- TAB 1: INPUT & REKAP -->
       <div id="tab-rekam" class="space-y-6 tab-content">
         
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
@@ -236,7 +249,7 @@
                 </div>
 
                 <div>
-                  <label id="lblGroupSelect" class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Filter Kamar / Ustadz (Opsional)</label>
+                  <label id="lblGroupSelect" class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Filter Kamar / Asrama</label>
                   <select id="groupSelect" onchange="handleGroupSelectChange()" class="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-brand-500">
                   </select>
                 </div>
@@ -309,7 +322,6 @@
           </form>
         </div>
 
-        <!-- Tabel Rekap Data -->
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden p-6 space-y-4">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -359,7 +371,6 @@
 
       </div>
 
-      <!-- TAB 2: MASTER DATA SANTRI -->
       <div id="tab-santri" class="space-y-6 tab-content hidden">
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between flex-wrap gap-2">
@@ -442,7 +453,6 @@
         </div>
       </div>
 
-      <!-- TAB 3: ANALYTICS -->
       <div id="tab-analytics" class="space-y-6 tab-content hidden">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
@@ -554,7 +564,7 @@
     const INITIAL_SAMPLE_SANTRI = [
       { id: 1, nis: "2024001", nama: "Ahmad Zaki Fuadi", kelas: "10-A IPA", kamar: "Kamar Abu Bakar 01", ustadz: "Ust. Farhan" },
       { id: 2, nis: "2024002", nama: "Muhammad Ali Ridho", kelas: "10-B IPA", kamar: "Kamar Umar 02", ustadz: "Ust. Farhan" },
-      { id: 3, nis: "2024003", nama: "Fatimah Az-Zahra", kelas: "11-A IPS", kamar: "Kamar Khadijah 01", ustadz: "Ustdzh. Siti" }
+      { id: 3, nis: "2024003", nama: "Fatimah Az-Zahra", kelas: "11-A IPS", kamar: "Kamar Khadijah 01", ustdz: "Ustdzh. Siti" }
     ];
 
     // KREDENSIAL DEFAULT SUPABASE
@@ -602,7 +612,13 @@
 
     function openModal(modalId) {
       const m = document.getElementById(modalId);
-      if (m) m.classList.remove('hidden');
+      if (m) {
+        m.classList.remove('hidden');
+        if (modalId === 'modalSupabase') {
+          document.getElementById('cfgUrl').value = SUPABASE_URL || '';
+          document.getElementById('cfgKey').value = SUPABASE_KEY || '';
+        }
+      }
     }
 
     function closeModal(modalId) {
@@ -661,14 +677,12 @@
         return `https://${dashMatch[1]}.supabase.co`;
       }
 
-      // Sediakan awalan https:// jika belum ada
       if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
         cleaned = 'https://' + cleaned;
       }
 
       try {
         const parsed = new URL(cleaned);
-        // Jika domain berakhiran .supabase.co, ambil murni protocol + hostname (membuang /rest/v1 dll)
         if (parsed.hostname.endsWith('.supabase.co')) {
           return `${parsed.protocol}//${parsed.hostname}`;
         }
@@ -688,7 +702,13 @@
       }
 
       try {
-        new URL(cleanUrl);
+        const parsedUrl = new URL(cleanUrl);
+        if (!parsedUrl.hostname.endsWith('.supabase.co')) {
+          return { 
+            ok: false, 
+            message: 'URL yang Anda masukkan adalah URL Website biasa, bukan Supabase! Gunakan URL Project dari Supabase yang berakhiran .supabase.co' 
+          };
+        }
       } catch (e) {
         return { ok: false, message: 'Format URL tidak valid. Contoh: https://xxxx.supabase.co' };
       }
@@ -704,14 +724,14 @@
 
         if (!res.ok) {
           const errText = await res.text();
-          if (errText.includes('Invalid path')) {
-            return { ok: false, message: 'Format URL Supabase salah. Pastikan hanya memasukkan: https://<id-project>.supabase.co' };
+          if (errText.includes('NOT_FOUND') || res.status === 404) {
+            return { ok: false, message: 'URL Supabase tidak ditemukan. Pastikan project tidak paused.' };
           }
         }
         
         return { ok: true, message: 'Terhubung! Supabase REST API merespon dengan sukses.' };
       } catch (err) {
-        return { ok: false, message: 'Gagal menghubungi server. Pastikan URL benar, jaringan stabil, dan project Supabase tidak sedang paused.' };
+        return { ok: false, message: 'Gagal menghubungi server. Pastikan URL benar dan koneksi internet aktif.' };
       }
     }
 
@@ -725,19 +745,28 @@
           _supabase = supabase.createClient(formattedUrl, cleanKey);
           document.getElementById('connectionBadge').innerText = "Supabase Active";
           document.getElementById('syncStatus').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Supabase Terhubung`;
+          document.getElementById('errorBanner').classList.add('hidden');
           return true;
         } catch (err) {
           console.error("Format URL Supabase Salah:", err);
           _supabase = null;
-          document.getElementById('connectionBadge').innerText = "URL Error";
-          document.getElementById('syncStatus').innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> URL Supabase Tidak Valid`;
+          showErrorBanner("Format URL Supabase tidak valid.");
           return false;
         }
       } else {
         _supabase = null;
         document.getElementById('connectionBadge').innerText = "Local Fallback";
-        document.getElementById('syncStatus').innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> Penyimpanan Lokal (Belum Set Supabase API)`;
+        document.getElementById('syncStatus').innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> Penyimpanan Lokal (Belum Set API)`;
         return false;
+      }
+    }
+
+    function showErrorBanner(msg) {
+      const banner = document.getElementById('errorBanner');
+      const bannerMsg = document.getElementById('errorBannerMsg');
+      if (banner && bannerMsg) {
+        bannerMsg.innerHTML = escapeHtml(msg);
+        banner.classList.remove('hidden');
       }
     }
 
@@ -791,9 +820,9 @@
           if (mErr) {
             console.error("Master Santri Error:", mErr);
             if (mErr.code === '42P01' || mErr.message?.includes('does not exist')) {
-              showToast('Tabel "master_santri" belum ada! Jalankan skrip setup_supabase.sql.', 'error');
+              showErrorBanner('Tabel "master_santri" belum ada di Supabase! Silakan jalankan skrip setup_supabase.sql.');
             } else {
-              showToast('Error Master Santri: ' + mErr.message, 'error');
+              showErrorBanner('Gagal memuat Master Santri: ' + mErr.message);
             }
           } else if (mData) {
             masterSantri = mData;
@@ -804,9 +833,9 @@
           if (rErr) {
             console.error("Rekam Medis Error:", rErr);
             if (rErr.code === '42P01' || rErr.message?.includes('does not exist')) {
-              showToast('Tabel "rekam_medis_santri" belum ada! Jalankan skrip setup_supabase.sql.', 'error');
+              showErrorBanner('Tabel "rekam_medis_santri" belum ada di Supabase! Silakan jalankan skrip setup_supabase.sql.');
             } else {
-              showToast('Error Rekam Medis: ' + rErr.message, 'error');
+              showErrorBanner('Gagal memuat Rekam Medis: ' + rErr.message);
             }
           } else if (rData) {
             rawData = rData;
@@ -816,22 +845,22 @@
           document.getElementById('syncStatus').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Supabase Terhubung`;
         } catch (e) {
           console.error("Load Data Exception:", e);
-          document.getElementById('connectionBadge').innerText = "URL Error";
-          document.getElementById('syncStatus').innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> Koneksi Supabase Gagal`;
-          showToast('Koneksi gagal. Periksa kembali URL & Anon Key di tombol Koneksi Supabase.', 'error');
+          showErrorBanner('Gagal terhubung ke Supabase. Beralih ke penyimpanan lokal sementara.');
         }
       } else {
         // LocalStorage Fallback
         const savedM = localStorage.getItem('POSKESTREN_MASTER_SANTRI');
         if (savedM) {
-          masterSantri = JSON.parse(savedM);
+          try { masterSantri = JSON.parse(savedM); } catch(e) { masterSantri = INITIAL_SAMPLE_SANTRI; }
         } else {
           masterSantri = INITIAL_SAMPLE_SANTRI;
           localStorage.setItem('POSKESTREN_MASTER_SANTRI', JSON.stringify(masterSantri));
         }
 
         const savedR = localStorage.getItem('POSKESTREN_REKAM_MEDIS');
-        if (savedR) rawData = JSON.parse(savedR);
+        if (savedR) {
+          try { rawData = JSON.parse(savedR); } catch(e) { rawData = []; }
+        }
       }
 
       updateStats();
@@ -844,8 +873,8 @@
       populateSantriOptions(masterSantri);
       
       const groupSelect = document.getElementById('groupSelect');
-      groupSelect.innerHTML = '<option value="">-- Semua Kamar & Ustadz --</option>';
-      const kamars = [...new Set(masterSantri.map(s => s.kamar))];
+      groupSelect.innerHTML = '<option value="">-- Semua Kamar / Asrama --</option>';
+      const kamars = [...new Set(masterSantri.map(s => s.kamar).filter(Boolean))];
       kamars.forEach(k => { groupSelect.innerHTML += `<option value="${escapeHtml(k)}">Kamar: ${escapeHtml(k)}</option>`; });
     }
 
@@ -853,17 +882,19 @@
       const santriSelect = document.getElementById('santriSelect');
       santriSelect.innerHTML = '<option value="">-- Pilih Nama Santri --</option>';
       
+      if (!list || list.length === 0) return;
+
       list.forEach(s => {
-        santriSelect.innerHTML += `<option value="${s.id}">${escapeHtml(s.nama)} (NIS: ${escapeHtml(s.nis)}) - ${escapeHtml(s.kamar)}</option>`;
+        santriSelect.innerHTML += `<option value="${s.id}">${escapeHtml(s.nama || '')} (NIS: ${escapeHtml(s.nis || '-')}) - ${escapeHtml(s.kamar || '-')}</option>`;
       });
     }
 
     function filterQuickSantriDropdown() {
-      const q = document.getElementById('quickSearchSantri').value.toLowerCase();
+      const q = (document.getElementById('quickSearchSantri').value || '').toLowerCase().trim();
       const filtered = masterSantri.filter(s => 
-        s.nama.toLowerCase().includes(q) || 
-        s.nis.toLowerCase().includes(q) ||
-        s.kamar.toLowerCase().includes(q)
+        (s.nama && s.nama.toLowerCase().includes(q)) || 
+        (s.nis && String(s.nis).toLowerCase().includes(q)) ||
+        (s.kamar && s.kamar.toLowerCase().includes(q))
       );
       populateSantriOptions(filtered);
     }
@@ -884,9 +915,9 @@
 
       const selected = masterSantri.find(s => s.id == santriId);
       if (selected) {
-        document.getElementById('nis').value = selected.nis;
-        document.getElementById('nama').value = selected.nama;
-        document.getElementById('kelas').value = `${selected.kelas} / ${selected.kamar} (${selected.ustadz})`;
+        document.getElementById('nis').value = selected.nis || '';
+        document.getElementById('nama').value = selected.nama || '';
+        document.getElementById('kelas').value = `${selected.kelas || ''} / ${selected.kamar || ''} (${selected.ustadz || ''})`;
         showToast(`Data santri ${selected.nama} berhasil diisi otomatis!`);
       }
     }
@@ -936,7 +967,6 @@
       loadData();
     }
 
-    // SAVE MASTER SANTRI
     async function handleSaveMasterSantri(e) {
       e.preventDefault();
 
@@ -965,7 +995,6 @@
       loadData();
     }
 
-    // SAVE REKAM MEDIS
     async function handleSaveRekamMedis(e) {
       e.preventDefault();
 
@@ -985,11 +1014,15 @@
         try {
           const { error } = await _supabase.from('rekam_medis_santri').insert([payload]);
           if (error) {
-            showToast('Gagal menyimpan ke Supabase: ' + error.message, 'error');
+            let errMsg = error.message;
+            if (errMsg.includes('NOT_FOUND') || errMsg.includes('could not be found')) {
+              errMsg = 'URL Supabase Salah! Silakan periksa kembali URL Supabase di tombol Koneksi Supabase.';
+            }
+            showToast('Gagal menyimpan: ' + errMsg, 'error');
             return;
           }
         } catch (err) {
-          showToast('Gagal menyimpan: URL Supabase tidak valid. Klik "Koneksi Supabase" untuk perbaiki.', 'error');
+          showToast('Gagal menyimpan: URL Supabase tidak valid.', 'error');
           return;
         }
       } else {
@@ -1005,7 +1038,6 @@
       loadData();
     }
 
-    // DELETE REKAM MEDIS
     function promptDelete(id) {
       deleteTargetId = id;
       openModal('modalDelete');
@@ -1041,7 +1073,7 @@
       const tbody = document.getElementById('tabelBody');
       tbody.innerHTML = '';
 
-      if (dataList.length === 0) {
+      if (!dataList || dataList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-400">Belum ada data rekam medis.</td></tr>`;
         return;
       }
@@ -1053,20 +1085,20 @@
 
         tbody.innerHTML += `
           <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-            <td class="p-3.5 font-medium text-slate-600 whitespace-nowrap">${escapeHtml(item.tanggal_periksa)}</td>
+            <td class="p-3.5 font-medium text-slate-600 whitespace-nowrap">${escapeHtml(item.tanggal_periksa || '-')}</td>
             <td class="p-3.5">
-              <div class="font-bold text-slate-800">${escapeHtml(item.nama_santri)}</div>
-              <div class="text-[11px] text-slate-400">NIS: ${escapeHtml(item.nis)} • ${escapeHtml(item.kelas_asrama)}</div>
+              <div class="font-bold text-slate-800">${escapeHtml(item.nama_santri || '-')}</div>
+              <div class="text-[11px] text-slate-400">NIS: ${escapeHtml(item.nis || '-')} • ${escapeHtml(item.kelas_asrama || '-')}</div>
             </td>
-            <td class="p-3.5 text-slate-700">${escapeHtml(item.keluhan)}</td>
+            <td class="p-3.5 text-slate-700">${escapeHtml(item.keluhan || '-')}</td>
             <td class="p-3.5 text-slate-700 font-medium">${escapeHtml(item.diagnosa || '-')}</td>
             <td class="p-3.5 text-slate-700">${escapeHtml(item.terapi_obat || '-')}</td>
             <td class="p-3.5 whitespace-nowrap">
               <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold border ${badgeStyle}">
-                ${escapeHtml(item.status_tindak_lanjut)}
+                ${escapeHtml(item.status_tindak_lanjut || 'Kembali ke Kamar')}
               </span>
             </td>
-            <td class="p-3.5 text-slate-500 text-[11px]">${escapeHtml(item.petugas)}</td>
+            <td class="p-3.5 text-slate-500 text-[11px]">${escapeHtml(item.petugas || '-')}</td>
             <td class="p-3.5 text-center whitespace-nowrap">
               <button onclick="promptDelete(${item.id})" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg">
                 <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -1076,26 +1108,28 @@
         `;
       });
 
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
     }
 
-    function renderMasterSantriTable() {
+    function renderMasterSantriTable(overrideList) {
       const tbody = document.getElementById('tabelMasterSantri');
       tbody.innerHTML = '';
 
-      if (masterSantri.length === 0) {
+      const list = overrideList || masterSantri;
+
+      if (!list || list.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400">Belum ada data master santri.</td></tr>`;
         return;
       }
 
-      masterSantri.forEach(s => {
+      list.forEach(s => {
         tbody.innerHTML += `
           <tr class="hover:bg-slate-50 transition">
-            <td class="p-3 font-semibold text-slate-700">${escapeHtml(s.nis)}</td>
-            <td class="p-3 font-bold text-slate-900">${escapeHtml(s.nama)}</td>
-            <td class="p-3 text-slate-600">${escapeHtml(s.kelas)}</td>
-            <td class="p-3"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md font-medium">${escapeHtml(s.kamar)}</span></td>
-            <td class="p-3 text-slate-600">${escapeHtml(s.ustadz)}</td>
+            <td class="p-3 font-semibold text-slate-700">${escapeHtml(s.nis || '-')}</td>
+            <td class="p-3 font-bold text-slate-900">${escapeHtml(s.nama || '-')}</td>
+            <td class="p-3 text-slate-600">${escapeHtml(s.kelas || '-')}</td>
+            <td class="p-3"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md font-medium">${escapeHtml(s.kamar || '-')}</span></td>
+            <td class="p-3 text-slate-600">${escapeHtml(s.ustadz || '-')}</td>
             <td class="p-3 text-center">
               <button onclick="deleteMasterSantri(${s.id})" class="text-rose-500 hover:text-rose-700 p-1">
                 <i data-lucide="trash" class="w-4 h-4"></i>
@@ -1105,7 +1139,7 @@
         `;
       });
 
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
     }
 
     async function deleteMasterSantri(id) {
@@ -1120,11 +1154,14 @@
     }
 
     function filterData() {
-      const query = document.getElementById('searchBar').value.toLowerCase();
+      const query = (document.getElementById('searchBar').value || '').toLowerCase().trim();
       const statusFilter = document.getElementById('filterStatus').value;
 
       const filtered = rawData.filter(item => {
-        const matchesQuery = item.nama_santri.toLowerCase().includes(query) || item.nis.toLowerCase().includes(query) || (item.diagnosa && item.diagnosa.toLowerCase().includes(query));
+        const matchesQuery = 
+          (item.nama_santri && item.nama_santri.toLowerCase().includes(query)) || 
+          (item.nis && String(item.nis).toLowerCase().includes(query)) || 
+          (item.diagnosa && item.diagnosa.toLowerCase().includes(query));
         const matchesStatus = statusFilter === 'ALL' || item.status_tindak_lanjut === statusFilter;
         return matchesQuery && matchesStatus;
       });
@@ -1133,16 +1170,21 @@
     }
 
     function filterMasterTable() {
-      const q = document.getElementById('searchMasterSantri').value.toLowerCase();
-      const filtered = masterSantri.filter(s => s.nama.toLowerCase().includes(q) || s.nis.toLowerCase().includes(q) || s.kamar.toLowerCase().includes(q) || s.ustadz.toLowerCase().includes(q));
+      const q = (document.getElementById('searchMasterSantri').value || '').toLowerCase().trim();
+      const filtered = masterSantri.filter(s => 
+        (s.nama && s.nama.toLowerCase().includes(q)) || 
+        (s.nis && String(s.nis).toLowerCase().includes(q)) || 
+        (s.kamar && s.kamar.toLowerCase().includes(q)) || 
+        (s.ustadz && s.ustadz.toLowerCase().includes(q))
+      );
       renderMasterSantriTable(filtered);
     }
 
     function exportCSV() {
-      if (rawData.length === 0) { showToast('Belum ada data untuk di-export', 'error'); return; }
+      if (!rawData || rawData.length === 0) { showToast('Belum ada data untuk di-export', 'error'); return; }
       let csvContent = "data:text/csv;charset=utf-8,ID,Tanggal,NIS,Nama,Kelas,Petugas,Status,Keluhan,Diagnosa,Terapi\n";
       rawData.forEach(r => {
-        csvContent += `"${r.id}","${r.tanggal_periksa}","${r.nis}","${r.nama_santri}","${r.kelas_asrama}","${r.petugas}","${r.status_tindak_lanjut}","${(r.keluhan||'').replace(/"/g, '""')}","${(r.diagnosa||'').replace(/"/g, '""')}","${(r.terapi_obat||'').replace(/"/g, '""')}"\n`;
+        csvContent += `"${r.id}","${r.tanggal_periksa || ''}","${r.nis || ''}","${r.nama_santri || ''}","${r.kelas_asrama || ''}","${r.petugas || ''}","${r.status_tindak_lanjut || ''}","${(r.keluhan||'').replace(/"/g, '""')}","${(r.diagnosa||'').replace(/"/g, '""')}","${(r.terapi_obat||'').replace(/"/g, '""')}"\n`;
       });
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
@@ -1189,11 +1231,14 @@
     }
 
     function escapeHtml(str) {
-      return str ? String(str).replace(/[&<>"']/g, function(m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]; }) : '';
+      if (str === null || str === undefined) return '';
+      return String(str).replace(/[&<>"']/g, function(m) { 
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]; 
+      });
     }
 
     window.onload = function() {
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
       document.getElementById('tanggal').valueAsDate = new Date();
       checkAuth();
     };
